@@ -1,0 +1,14 @@
+---
+services:
+  openldap:
+    build: .
+    restart: unless-stopped
+    environment:
+      TZ: "Europe/Warsaw"
+    ports:
+      - "389:389"
+      - "636:636"
+    volumes:
+      - ./data/ldap:/var/lib/ldap
+      - ./data/slapd.d:/etc/ldap/slapd.d
+      - ./certs:/certs:ro

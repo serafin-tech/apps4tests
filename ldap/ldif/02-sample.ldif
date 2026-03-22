@@ -1,0 +1,37 @@
+dn: uid=jdoe,ou=people,dc=example,dc=local
+objectClass: inetOrgPerson
+uid: jdoe
+cn: John Doe
+sn: Doe
+givenName: John
+mail: jdoe@example.local
+userPassword: password
+
+dn: uid=jsmith,ou=people,dc=example,dc=local
+objectClass: inetOrgPerson
+uid: jsmith
+cn: Jane Smith
+sn: Smith
+givenName: Jane
+mail: jsmith@example.local
+userPassword: password
+
+dn: uid=aadmin,ou=people,dc=example,dc=local
+objectClass: inetOrgPerson
+uid: aadmin
+cn: Alice Admin
+sn: Admin
+givenName: Alice
+mail: aadmin@example.local
+userPassword: password
+
+dn: cn=developers,ou=groups,dc=example,dc=local
+objectClass: groupOfNames
+cn: developers
+member: uid=jdoe,ou=people,dc=example,dc=local
+member: uid=jsmith,ou=people,dc=example,dc=local
+
+dn: cn=admins,ou=groups,dc=example,dc=local
+objectClass: groupOfNames
+cn: admins
+member: uid=aadmin,ou=people,dc=example,dc=local

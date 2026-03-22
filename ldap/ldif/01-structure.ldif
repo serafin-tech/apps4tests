@@ -1,0 +1,14 @@
+dn: ou=people,dc=example,dc=local
+objectClass: organizationalUnit
+ou: people
+
+dn: ou=groups,dc=example,dc=local
+objectClass: organizationalUnit
+ou: groups
+
+dn: cn=proxyuser,dc=example,dc=local
+objectClass: organizationalRole
+objectClass: simpleSecurityObject
+cn: proxyuser
+description: Proxy user for application authorization bind
+userPassword: password
