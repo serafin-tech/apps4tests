@@ -15,7 +15,7 @@ Each app directory follows one of two patterns (do not list applications for the
 
 **Docker Compose only**:
 - `compose.yaml` — defines the service stack, run directly on the host
-- `ldap/` also uses a custom `Dockerfile` + `entrypoint.sh`; run `./gen-cert.sh` first, then `./populate.sh` after startup
+- `ldap/` also uses a custom `Dockerfile` + `entrypoint.sh`; run `./gen-cert.sh` first, `./init-lam-config.sh` once before first start, then `./populate.sh` after startup
 
 
 ## Commands

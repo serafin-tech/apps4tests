@@ -12,3 +12,23 @@ services:
       - ./data/ldap:/var/lib/ldap
       - ./data/slapd.d:/etc/ldap/slapd.d
       - ./certs:/certs:ro
+
+  lam:
+    image: ghcr.io/ldapaccountmanager/lam:stable
+    restart: unless-stopped
+    environment:
+      TZ: "Europe/Warsaw"
+      LAM_PASSWORD: "password"
+      LAM_LANG: "en_US"
+      LDAP_SERVER: "ldap://openldap:389"
+      LDAP_DOMAIN: "example.local"
+      LDAP_BASE_DN: "dc=example,dc=local"
+      LDAP_USERS_DN: "ou=people,dc=example,dc=local"
+      LDAP_GROUPS_DN: "ou=groups,dc=example,dc=local"
+      LDAP_USER: "cn=admin,dc=example,dc=local"
+    ports:
+      - "8080:80"
+    volumes:
+      - ./data/lam:/var/lib/ldap-account-manager/config
+    depends_on:
+      - openldap
