@@ -1,55 +1,63 @@
-# Keycloak
+# Keycloak + Flask OIDC Demo
 
-A local [Keycloak](https://www.keycloak.org/) identity and access management server running in dev mode.
+A local [Keycloak](https://www.keycloak.org/) identity and access management server with a Flask demo app that authenticates via OIDC Authorization Code flow (+ PKCE).
 
-| Service   | URL                         | Description               |
-|-----------|-----------------------------|---------------------------|
-| Keycloak  | http://localhost:8080       | Admin Console + OIDC/SAML |
-| Admin UI  | http://localhost:8080/admin | Admin Console             |
-| Health    | http://localhost:9000/health/ready | Management / health endpoint |
+Source for Flask app: [korah91/OIDC-App-with-Flask-and-Keycloak](https://github.com/korah91/OIDC-App-with-Flask-and-Keycloak)
 
-**Default credentials**
+| Service        | URL                                | Description                          |
+|----------------|------------------------------------|--------------------------------------|
+| Flask app      | http://localhost:5000              | Demo app — login triggers OIDC flow  |
+| Keycloak       | http://localhost:8080              | Identity provider                    |
+| Keycloak Admin | http://localhost:8080/admin        | Admin Console (`admin` / `admin`)    |
+| Health         | http://localhost:9000/health/ready | Keycloak management / health endpoint |
 
-| What             | Value   |
-|------------------|---------|
-| Admin username   | `admin` |
-| Admin password   | `admin` |
+**Keycloak credentials**
 
-> **Note:** `start-dev` mode is for local lab use only — it uses an embedded H2 database and disables production hardening.
+| What              | Value                            |
+|-------------------|----------------------------------|
+| Admin username    | `admin`                          |
+| Admin password    | `admin`                          |
+| Realm             | `myorg`                          |
+| OIDC Client ID    | `test_web_app`                   |
+| OIDC Client Secret | `FXv2ugPyXsF2hN46EoAL3bmvx5MiUdHf` |
+
+> **Note:** Both services use `network_mode: host` so the Flask container can reach Keycloak at `localhost:8080` without hostname resolution issues in the OIDC redirect flow. This requires a Linux host.
+
+> **Note:** `start-dev` mode is for local lab use only — embedded H2 database, no production hardening.
 
 ---
 
 ## Prerequisites
 
-- Docker with Compose plugin
+- Docker with Compose plugin (Linux host required for `network_mode: host`)
 
 ---
 
-## Start Keycloak
+## Start the stack
 
-```sh {"cwd":"/home/serafin/work/apps4tests/keycloak","name":"compose-up"}
-docker compose up -d
+Builds the Flask image and starts both services. On first start, Keycloak imports the `myorg` realm (including the `test_web_app` OIDC client) automatically.
+
+```sh {"name":"compose-up","cwd":"/home/serafin/work/apps4tests/keycloak"}
+docker compose up -d --build
 ```
-
-Keycloak takes ~15–20 seconds to fully initialise on first start.
 
 ### Check container status
 
-```sh {"cwd":"/home/serafin/work/apps4tests/keycloak","name":"compose-status"}
+```sh {"name":"compose-status","cwd":"/home/serafin/work/apps4tests/keycloak"}
 docker compose ps
 ```
 
 ### Follow logs
 
-```sh {"cwd":"/home/serafin/work/apps4tests/keycloak","name":"compose-logs"}
-docker compose logs --tail=100
+```sh {"name":"compose-logs","cwd":"/home/serafin/work/apps4tests/keycloak"}
+docker compose logs --tail=100 -f
 ```
 
 ### Wait for Keycloak to be ready
 
 The health endpoint is served on the management port `9000`, separate from the main HTTP port `8080`.
 
-```sh {"cwd":"/home/serafin/work/apps4tests/keycloak","name":"wait-ready"}
+```sh {"name":"wait-ready","cwd":"/home/serafin/work/apps4tests/keycloak"}
 until curl -sfS http://localhost:9000/health/ready > /dev/null 2>&1; do
   echo "Waiting for Keycloak..."; sleep 3
 done
@@ -58,31 +66,49 @@ echo "Keycloak is ready."
 
 ---
 
+## Create a test user in Keycloak
+
+The imported realm has no users. Create one via the Admin Console:
+
+1. Open http://localhost:8080/admin → log in as `admin` / `admin`
+2. Select realm **myorg** (top-left dropdown)
+3. Go to **Users → Create new user**
+4. Fill in **Username**, **Email**, **First name**, **Last name** → **Create**
+5. Go to **Credentials** tab → **Set password** → toggle **Temporary** off → **Save**
+
+---
+
 ## Verify
 
-Open the Admin Console and log in with `admin` / `admin`:
+Check the Keycloak health endpoint:
 
-```sh {"cwd":"/home/serafin/work/apps4tests/keycloak","name":"open-admin"}
-xdg-open http://localhost:8080/admin 2>/dev/null || echo "Open http://localhost:8080/admin in your browser"
+```sh {"name":"health-check","cwd":"/home/serafin/work/apps4tests/keycloak"}
+curl -s http://localhost:9000/health/ready | jq .
 ```
 
-Check the health endpoint directly (served on management port `9000`):
+Verify the OIDC discovery document for the `myorg` realm is available:
 
-```sh {"cwd":"/home/serafin/work/apps4tests/keycloak","name":"health-check"}
-curl -s http://localhost:9000/health/ready | jq .
+```sh {"name":"oidc-discovery","cwd":"/home/serafin/work/apps4tests/keycloak"}
+curl -s http://localhost:8080/realms/myorg/.well-known/openid-configuration | jq '{issuer, authorization_endpoint, token_endpoint}'
+```
+
+Open the Flask demo app:
+
+```sh {"name":"open-app","cwd":"/home/serafin/work/apps4tests/keycloak"}
+xdg-open http://localhost:5000 2>/dev/null || echo "Open http://localhost:5000 in your browser"
 ```
 
 ---
 
-## Stop Keycloak
+## Stop the stack
 
-```sh {"cwd":"/home/serafin/work/apps4tests/keycloak","name":"compose-down"}
+```sh {"name":"compose-down","cwd":"/home/serafin/work/apps4tests/keycloak"}
 docker compose down
 ```
 
-Remove persisted data (resets all realms, users, and config):
+Remove all persisted data (resets Keycloak DB, imported realms, and users):
 
-```sh {"cwd":"/home/serafin/work/apps4tests/keycloak","name":"compose-down-clean"}
+```sh {"name":"compose-down-clean","cwd":"/home/serafin/work/apps4tests/keycloak"}
 docker compose down && rm -rf data/
 ```
 
@@ -90,24 +116,35 @@ docker compose down && rm -rf data/
 
 ## Architecture
 
-```ini
-┌──────────────────────────────────────────┐
-│  Docker Compose                          │
-│                                          │
-│  ┌────────────────────────────────────┐  │
-│  │  keycloak                          │  │
-│  │  quay.io/keycloak/keycloak:26.5.6  │  │
-│  │  :8080  (HTTP, start-dev mode)     │  │
-│  │  :9000  (management / health)      │  │
-│  └────────────────┬───────────────────┘  │
-│                   │                      │
-└───────────────────┼──────────────────────┘
-                    │  bind-mount
-                    └── ./data   (H2 database, realm exports)
+```
+  Host network (localhost)
+  ┌────────────────────────────────────────────────────────────┐
+  │                                                            │
+  │  ┌─────────────────────────────┐                          │
+  │  │  keycloak                   │                          │
+  │  │  quay.io/keycloak:26.5.6    │                          │
+  │  │  :8080  HTTP (start-dev)    │                          │
+  │  │  :9000  management/health   │                          │
+  │  └──────────────┬──────────────┘                          │
+  │                 │ localhost:8080 (OIDC)                    │
+  │  ┌──────────────▼──────────────┐                          │
+  │  │  flask-app  (built locally) │                          │
+  │  │  :5000  HTTP                │                          │
+  │  └─────────────────────────────┘                          │
+  │                                                            │
+  └────────────────────────────────────────────────────────────┘
+  bind-mounts:
+    ./data          → Keycloak H2 database + config
+    ./realm-import  → myorg-realm.json (imported on first start)
+    ./flask-app     → built into image
 ```
 
-Keycloak is started with `start-dev` which enables:
+### OIDC flow
 
-- Embedded H2 database (persisted to `./data`)
-- HTTP (no TLS required)
-- Relaxed hostname checks suitable for `localhost`
+1. Browser opens `http://localhost:5000` → clicks **Login with Keycloak**
+2. Flask redirects to Keycloak Authorization endpoint (`/realms/myorg/protocol/openid-connect/auth`)
+3. User authenticates in Keycloak
+4. Keycloak redirects back to `http://localhost:5000/callback` with auth code
+5. Flask exchanges code for tokens (ID token, access token, refresh token)
+6. Session is set; user info and tokens are displayed on the home page
+
