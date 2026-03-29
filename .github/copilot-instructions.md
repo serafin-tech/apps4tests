@@ -48,6 +48,7 @@ docker compose logs -f      # follow logs
 - **Apt installs**: use `apt-get install -yq` with `DEBIAN_FRONTEND=noninteractive`
 - **App port**: 8080 is the standard guest/host forwarded port for web UIs
 - **Volume naming**: descriptive suffixes, e.g. `cellsdir`, `mariadbdird`
+- **Runbooks**: each app directory must have a `README.mdr` runme.dev runbook (not a plain `README.md`) with executable steps for setup, start, and verification. Code blocks must include `{"name":"<step>","cwd":"<abs-path>"}` annotations so every step is runnable directly from VSCode with the [Runme extension](https://marketplace.visualstudio.com/items?itemName=stateful.runme).
 
 ## Adding a New App Environment
 
@@ -57,3 +58,4 @@ Follow the existing pattern:
 3. Add `provision_script.sh` (copy from `bindplane/` or `pydio-cells/` as a base)
 4. Add a `compose.yaml` inside the app directory if Docker services are needed
 5. Add `testme.sh` for smoke tests
+6. Add a `README.mdr` runme.dev runbook covering prerequisites, first-time setup, start, verification, and teardown steps
