@@ -1,0 +1,113 @@
+# Keycloak
+
+A local [Keycloak](https://www.keycloak.org/) identity and access management server running in dev mode.
+
+| Service   | URL                         | Description               |
+|-----------|-----------------------------|---------------------------|
+| Keycloak  | http://localhost:8080       | Admin Console + OIDC/SAML |
+| Admin UI  | http://localhost:8080/admin | Admin Console             |
+| Health    | http://localhost:9000/health/ready | Management / health endpoint |
+
+**Default credentials**
+
+| What             | Value   |
+|------------------|---------|
+| Admin username   | `admin` |
+| Admin password   | `admin` |
+
+> **Note:** `start-dev` mode is for local lab use only — it uses an embedded H2 database and disables production hardening.
+
+---
+
+## Prerequisites
+
+- Docker with Compose plugin
+
+---
+
+## Start Keycloak
+
+```sh {"cwd":"/home/serafin/work/apps4tests/keycloak","name":"compose-up"}
+docker compose up -d
+```
+
+Keycloak takes ~15–20 seconds to fully initialise on first start.
+
+### Check container status
+
+```sh {"cwd":"/home/serafin/work/apps4tests/keycloak","name":"compose-status"}
+docker compose ps
+```
+
+### Follow logs
+
+```sh {"cwd":"/home/serafin/work/apps4tests/keycloak","name":"compose-logs"}
+docker compose logs --tail=100
+```
+
+### Wait for Keycloak to be ready
+
+The health endpoint is served on the management port `9000`, separate from the main HTTP port `8080`.
+
+```sh {"cwd":"/home/serafin/work/apps4tests/keycloak","name":"wait-ready"}
+until curl -sfS http://localhost:9000/health/ready > /dev/null 2>&1; do
+  echo "Waiting for Keycloak..."; sleep 3
+done
+echo "Keycloak is ready."
+```
+
+---
+
+## Verify
+
+Open the Admin Console and log in with `admin` / `admin`:
+
+```sh {"cwd":"/home/serafin/work/apps4tests/keycloak","name":"open-admin"}
+xdg-open http://localhost:8080/admin 2>/dev/null || echo "Open http://localhost:8080/admin in your browser"
+```
+
+Check the health endpoint directly (served on management port `9000`):
+
+```sh {"cwd":"/home/serafin/work/apps4tests/keycloak","name":"health-check"}
+curl -s http://localhost:9000/health/ready | jq .
+```
+
+---
+
+## Stop Keycloak
+
+```sh {"cwd":"/home/serafin/work/apps4tests/keycloak","name":"compose-down"}
+docker compose down
+```
+
+Remove persisted data (resets all realms, users, and config):
+
+```sh {"cwd":"/home/serafin/work/apps4tests/keycloak","name":"compose-down-clean"}
+docker compose down && rm -rf data/
+```
+
+---
+
+## Architecture
+
+```ini
+┌──────────────────────────────────────────┐
+│  Docker Compose                          │
+│                                          │
+│  ┌────────────────────────────────────┐  │
+│  │  keycloak                          │  │
+│  │  quay.io/keycloak/keycloak:26.5.6  │  │
+│  │  :8080  (HTTP, start-dev mode)     │  │
+│  │  :9000  (management / health)      │  │
+│  └────────────────┬───────────────────┘  │
+│                   │                      │
+└───────────────────┼──────────────────────┘
+                    │  bind-mount
+                    └── ./data   (H2 database, realm exports)
+```
+
+Keycloak is started with `start-dev` which enables:
+
+- Embedded H2 database (persisted to `./data`)
+- HTTP (no TLS required)
+- Relaxed hostname checks suitable for `localhost`
