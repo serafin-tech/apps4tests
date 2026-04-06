@@ -1,0 +1,70 @@
+# Jenkins
+
+A local [Jenkins](https://www.jenkins.io/) LTS automation server running in Docker.
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| Jenkins | http://localhost:8080 | Web UI / setup wizard |
+
+> **First start:** Jenkins will display a setup wizard. You will need the one-time
+> initial admin password (see [Retrieve initial password](#retrieve-initial-password) below).
+
+---
+
+## Prerequisites
+
+- Docker with Compose plugin
+
+---
+
+## Start the stack
+
+```sh {"cwd":"/home/serafin/work.local/apps4tests/jenkins","name":"compose-up"}
+docker compose up -d
+```
+
+### Check container status
+
+```sh {"cwd":"/home/serafin/work.local/apps4tests/jenkins","name":"compose-status"}
+docker compose ps
+```
+
+### Follow logs
+
+```sh {"cwd":"/home/serafin/work.local/apps4tests/jenkins","name":"compose-logs"}
+docker compose logs --tail=100 -f
+```
+
+---
+
+## Retrieve initial password
+
+Jenkins generates a one-time admin password on first start. Use it to unlock
+the setup wizard at http://localhost:8080.
+
+```sh {"cwd":"/home/serafin/work.local/apps4tests/jenkins","name":"get-initial-password"}
+docker compose exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+```
+
+### Wait for Jenkins to be ready
+
+```sh {"cwd":"/home/serafin/work.local/apps4tests/jenkins","name":"wait-ready"}
+until curl -sf http://localhost:8080/login > /dev/null 2>&1; do
+  echo "Waiting for Jenkins..."; sleep 5
+done
+echo "Jenkins is ready — open http://localhost:8080"
+```
+
+---
+
+## Stop the stack
+
+```sh {"cwd":"/home/serafin/work.local/apps4tests/jenkins","name":"compose-down"}
+docker compose down
+```
+
+Remove all persisted data (resets Jenkins — plugins, jobs, credentials, users):
+
+```sh {"cwd":"/home/serafin/work.local/apps4tests/jenkins","name":"compose-down-clean"}
+docker compose down && docker volume rm jenkins_jenkinsdir
+```

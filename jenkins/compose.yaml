@@ -1,0 +1,15 @@
+---
+services:
+  jenkins:
+    image: jenkins/jenkins:lts-jdk21
+    restart: unless-stopped
+    environment:
+      TZ: "Europe/Warsaw"
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkinsdir:/var/jenkins_home
+
+volumes:
+  jenkinsdir: {}
