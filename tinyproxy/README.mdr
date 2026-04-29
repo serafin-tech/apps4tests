@@ -1,0 +1,88 @@
+# Tinyproxy
+
+A lightweight HTTP/HTTPS proxy server running inside a Vagrant VM. Tinyproxy listens on port **8888**, forwarded from the VM to the host.
+
+| What       | Value                     |
+|------------|---------------------------|
+| Proxy URL  | `http://localhost:8888`   |
+| Guest port | 8888                      |
+| Host port  | 8888                      |
+
+---
+
+## Prerequisites
+
+- VirtualBox
+- Vagrant
+
+---
+
+## Start the VM
+
+```sh {"name":"vagrant-up","cwd":"/home/serafin/work/apps4tests/tinyproxy"}
+vagrant up
+```
+
+### Check VM status
+
+```sh {"name":"vagrant-status","cwd":"/home/serafin/work/apps4tests/tinyproxy"}
+vagrant status
+```
+
+### SSH into the VM
+
+```sh {"name":"vagrant-ssh","cwd":"/home/serafin/work/apps4tests/tinyproxy"}
+vagrant ssh
+```
+
+---
+
+## Verify
+
+Run the smoke test from the host — checks that tinyproxy is reachable and proxies HTTP traffic:
+
+```sh {"name":"testme","cwd":"/home/serafin/work/apps4tests/tinyproxy"}
+./testme.sh
+```
+
+Manual check with curl:
+
+```sh {"name":"curl-proxy","cwd":"/home/serafin/work/apps4tests/tinyproxy"}
+curl -x http://localhost:8888 -sI http://example.com
+```
+
+---
+
+## Use the proxy
+
+Configure any HTTP client to use `http://localhost:8888` as an HTTP proxy.
+
+Example — download a file through the proxy:
+
+```sh {"name":"curl-download","cwd":"/home/serafin/work/apps4tests/tinyproxy"}
+curl -x http://localhost:8888 -L -o /dev/null -w "%{http_code}\n" https://example.com
+```
+
+Example — set proxy environment variables for a shell session:
+
+```sh {"name":"proxy-env","cwd":"/home/serafin/work/apps4tests/tinyproxy"}
+export http_proxy=http://localhost:8888
+export https_proxy=http://localhost:8888
+curl -sI http://example.com
+```
+
+---
+
+## Teardown
+
+Stop the VM:
+
+```sh {"name":"vagrant-halt","cwd":"/home/serafin/work/apps4tests/tinyproxy"}
+vagrant halt
+```
+
+Destroy the VM (removes all state):
+
+```sh {"name":"vagrant-destroy","cwd":"/home/serafin/work/apps4tests/tinyproxy"}
+vagrant destroy -f
+```
